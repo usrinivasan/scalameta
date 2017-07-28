@@ -12,6 +12,7 @@ import scala.meta.io._
 import scala.meta.internal.semantic.DatabaseOps
 import scala.meta.internal.semantic.{vfs => v}
 import scala.tools.nsc.doc.ScaladocGlobal
+import scala.util.matching
 
 trait ScalahostPipeline extends DatabaseOps { self: ScalahostPlugin =>
   lazy val scalametaTargetroot = AbsolutePath(
@@ -38,6 +39,12 @@ trait ScalahostPipeline extends DatabaseOps { self: ScalahostPlugin =>
           if (config.semanticdb.isDisabled || !unit.source.file.name.endsWith(".scala")) return
           val mminidb = m.Database(List(unit.toAttributes))
           mminidb.save(scalametaTargetroot, config.sourceroot)
+          // is there a thrift source file annotation in this file?
+          val thriftannot = """@com.twitter.scrooge.thriftSource""".r
+          val result = thriftannot.findFirstIn(unit.source.content)
+          if (result.isDefined) {
+            println("found thriftSource annotation in --> " + unit.source.file.name)
+          }
         } catch {
           case NonFatal(ex) =>
             val writer = new StringWriter()
